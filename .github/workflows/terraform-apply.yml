@@ -45,9 +45,17 @@ jobs:
         run: terraform validate
 
       - name: Terraform Plan
+        env:
+          TF_VAR_github_org: ${{ vars.TF_VAR_github_org }}
+          TF_VAR_github_repo_infra: ${{ vars.TF_VAR_github_repo_infra }}
+          TF_VAR_github_repo_app: ${{ vars.TF_VAR_github_repo_app }}
         run: terraform plan -out=tfplan
 
       - name: Terraform Apply
+        env:
+          TF_VAR_github_org: ${{ vars.TF_VAR_github_org }}
+          TF_VAR_github_repo_infra: ${{ vars.TF_VAR_github_repo_infra }}
+          TF_VAR_github_repo_app: ${{ vars.TF_VAR_github_repo_app }}
         run: terraform apply -auto-approve tfplan
 
       - name: Output Terraform Outputs
