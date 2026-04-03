@@ -215,9 +215,9 @@ resource "aws_cloudwatch_dashboard" "main" {
       {
         type = "log"
         properties = {
-          query   = "SOURCE '/aws/lambda/${var.lambda_function_name}' | fields @timestamp, @message | sort @timestamp desc | limit 20"
-          region  = var.aws_region
-          title   = "Recent Lambda Logs"
+          query  = "SOURCE '/aws/lambda/${var.lambda_function_name}' | fields @timestamp, @message | sort @timestamp desc | limit 20"
+          region = var.aws_region
+          title  = "Recent Lambda Logs"
         }
       }
     ]

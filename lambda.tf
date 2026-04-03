@@ -20,16 +20,16 @@ resource "aws_lambda_function" "hello_world" {
 
   environment {
     variables = {
-      ENVIRONMENT         = var.environment
-      LOG_LEVEL          = "INFO"
+      ENVIRONMENT             = var.environment
+      LOG_LEVEL               = "INFO"
       POWERTOOLS_SERVICE_NAME = var.lambda_function_name
 
       # OpenTelemetry configuration
-      OTEL_SERVICE_NAME   = var.lambda_function_name
+      OTEL_SERVICE_NAME        = var.lambda_function_name
       OTEL_RESOURCE_ATTRIBUTES = "service.name=${var.lambda_function_name},deployment.environment=${var.environment}"
 
       # AWS X-Ray exporter
-      OTEL_TRACES_EXPORTER = "otlp"
+      OTEL_TRACES_EXPORTER        = "otlp"
       OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
       OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
 
