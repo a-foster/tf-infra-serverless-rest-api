@@ -1,5 +1,5 @@
-# Lambda Function
-# Containerized Lambda function for the Hello World API
+# Lambda Function Module
+# Containerized Lambda function with OpenTelemetry observability
 
 # Note: For initial deployment, you need to push a Docker image to ECR first
 # The image URI should be: <account_id>.dkr.ecr.<region>.amazonaws.com/<repo_name>:latest
@@ -9,74 +9,33 @@ locals {
   lambda_image_uri = "${aws_ecr_repository.lambda_container.repository_url}:latest"
 }
 
-resource "aws_lambda_function" "hello_world" {
-  function_name = var.lambda_function_name
-  role          = aws_iam_role.lambda_execution.arn
-  package_type  = "Image"
-  image_uri     = local.lambda_image_uri
+module "lambda" {
+  source = "./modules/lambda"
 
-  memory_size = var.lambda_memory_size
-  timeout     = var.lambda_timeout
+  # Required inputs
+  function_name  = var.lambda_function_name
+  image_uri      = local.lambda_image_uri
+  environment    = var.environment
+  project_name   = var.project_name
+  aws_region     = data.aws_region.current.name
+  aws_account_id = data.aws_caller_identity.current.account_id
 
-  environment {
-    variables = {
-      ENVIRONMENT             = var.environment
-      LOG_LEVEL               = "INFO"
-      POWERTOOLS_SERVICE_NAME = var.lambda_function_name
+  # Lambda configuration
+  memory_size        = var.lambda_memory_size
+  timeout            = var.lambda_timeout
+  log_retention_days = 30
+  tracing_mode       = "Active"
+  log_level          = "INFO"
 
-      # OpenTelemetry configuration
-      OTEL_SERVICE_NAME        = var.lambda_function_name
-      OTEL_RESOURCE_ATTRIBUTES = "service.name=${var.lambda_function_name},deployment.environment=${var.environment}"
+  # Alarm thresholds (using default values from module)
+  error_threshold                = 5
+  throttle_threshold             = 10
+  duration_threshold             = 5000
+  concurrent_execution_threshold = 100
 
-      # AWS X-Ray exporter
-      OTEL_TRACES_EXPORTER        = "otlp"
-      OTEL_EXPORTER_OTLP_PROTOCOL = "http/protobuf"
-      OTEL_EXPORTER_OTLP_ENDPOINT = "http://localhost:4318"
+  # API Gateway integration
+  api_gateway_execution_arn = aws_api_gateway_rest_api.main.execution_arn
 
-      # Use AWS X-Ray for tracing
-      AWS_XRAY_DAEMON_ADDRESS = "127.0.0.1:2000"
-    }
-  }
-
-  tracing_config {
-    mode = "Active"
-  }
-
-  # Lifecycle configuration to prevent Terraform from reverting image updates made by CI/CD
-  lifecycle {
-    ignore_changes = [
-      image_uri,
-      # Allow CI/CD to update the image without Terraform reverting it
-    ]
-  }
-
-  tags = {
-    Name        = var.lambda_function_name
-    Environment = var.environment
-    Framework   = "OpenTelemetry"
-  }
-
-  depends_on = [
-    aws_iam_role_policy.lambda_execution,
-    aws_cloudwatch_log_group.lambda
-  ]
-}
-
-# CloudWatch Log Group for Lambda
-resource "aws_cloudwatch_log_group" "lambda" {
-  name              = "/aws/lambda/${var.lambda_function_name}"
-  retention_in_days = 30
-
-  tags = {
-    Name        = "${var.lambda_function_name}-logs"
-    Environment = var.environment
-  }
-}
-
-# Lambda Function Alias (optional, useful for versioning)
-resource "aws_lambda_alias" "live" {
-  name             = "live"
-  description      = "Live alias for ${var.lambda_function_name}"
-  function_name    = aws_lambda_function.hello_world.function_name
-  function_version = "$LATEST"
+  # Tags
+  tags = {}
 }
