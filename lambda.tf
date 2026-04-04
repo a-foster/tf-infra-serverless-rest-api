@@ -28,10 +28,10 @@ module "lambda" {
   log_level          = "INFO"
 
   # Alarm thresholds (using default values from module)
-  error_threshold                 = 5
-  throttle_threshold              = 10
-  duration_threshold              = 5000
-  concurrent_execution_threshold  = 100
+  error_threshold                = 5
+  throttle_threshold             = 10
+  duration_threshold             = 5000
+  concurrent_execution_threshold = 100
 
   # API Gateway integration
   api_gateway_execution_arn = aws_api_gateway_rest_api.main.execution_arn
