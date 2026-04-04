@@ -4,94 +4,7 @@
 # ============================================================================
 # Lambda CloudWatch Alarms
 # ============================================================================
-
-resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
-  alarm_name          = "${var.lambda_function_name}-errors"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 1
-  metric_name         = "Errors"
-  namespace           = "AWS/Lambda"
-  period              = 60
-  statistic           = "Sum"
-  threshold           = 5
-  alarm_description   = "This metric monitors Lambda function errors"
-  treat_missing_data  = "notBreaching"
-
-  dimensions = {
-    FunctionName = aws_lambda_function.hello_world.function_name
-  }
-
-  tags = {
-    Name        = "${var.lambda_function_name}-errors"
-    Environment = var.environment
-  }
-}
-
-resource "aws_cloudwatch_metric_alarm" "lambda_throttles" {
-  alarm_name          = "${var.lambda_function_name}-throttles"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 1
-  metric_name         = "Throttles"
-  namespace           = "AWS/Lambda"
-  period              = 60
-  statistic           = "Sum"
-  threshold           = 10
-  alarm_description   = "This metric monitors Lambda function throttles"
-  treat_missing_data  = "notBreaching"
-
-  dimensions = {
-    FunctionName = aws_lambda_function.hello_world.function_name
-  }
-
-  tags = {
-    Name        = "${var.lambda_function_name}-throttles"
-    Environment = var.environment
-  }
-}
-
-resource "aws_cloudwatch_metric_alarm" "lambda_duration" {
-  alarm_name          = "${var.lambda_function_name}-duration"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 2
-  metric_name         = "Duration"
-  namespace           = "AWS/Lambda"
-  period              = 60
-  statistic           = "Average"
-  threshold           = 5000 # 5 seconds
-  alarm_description   = "This metric monitors Lambda function duration"
-  treat_missing_data  = "notBreaching"
-
-  dimensions = {
-    FunctionName = aws_lambda_function.hello_world.function_name
-  }
-
-  tags = {
-    Name        = "${var.lambda_function_name}-duration"
-    Environment = var.environment
-  }
-}
-
-resource "aws_cloudwatch_metric_alarm" "lambda_concurrent_executions" {
-  alarm_name          = "${var.lambda_function_name}-concurrent-executions"
-  comparison_operator = "GreaterThanThreshold"
-  evaluation_periods  = 1
-  metric_name         = "ConcurrentExecutions"
-  namespace           = "AWS/Lambda"
-  period              = 60
-  statistic           = "Maximum"
-  threshold           = 100
-  alarm_description   = "This metric monitors Lambda concurrent executions"
-  treat_missing_data  = "notBreaching"
-
-  dimensions = {
-    FunctionName = aws_lambda_function.hello_world.function_name
-  }
-
-  tags = {
-    Name        = "${var.lambda_function_name}-concurrent-executions"
-    Environment = var.environment
-  }
-}
+# Note: Lambda CloudWatch alarms have been moved to modules/lambda/monitoring.tf
 
 # ============================================================================
 # API Gateway CloudWatch Alarms
@@ -189,7 +102,7 @@ resource "aws_cloudwatch_dashboard" "main" {
           region = var.aws_region
           title  = "Lambda Metrics"
           dimensions = {
-            FunctionName = [aws_lambda_function.hello_world.function_name]
+            FunctionName = [module.lambda.function_name]
           }
         }
       },

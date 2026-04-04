@@ -45,7 +45,7 @@ resource "aws_api_gateway_integration" "hello_get" {
   http_method             = aws_api_gateway_method.hello_get.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.hello_world.invoke_arn
+  uri                     = module.lambda.invoke_arn
 }
 
 # /health resource
@@ -70,7 +70,7 @@ resource "aws_api_gateway_integration" "health_get" {
   http_method             = aws_api_gateway_method.health_get.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.hello_world.invoke_arn
+  uri                     = module.lambda.invoke_arn
 }
 
 # ============================================================================
@@ -178,14 +178,7 @@ resource "aws_api_gateway_integration_response" "health_options" {
 # ============================================================================
 # Lambda Permission for API Gateway
 # ============================================================================
-
-resource "aws_lambda_permission" "api_gateway" {
-  statement_id  = "AllowAPIGatewayInvoke"
-  action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.hello_world.function_name
-  principal     = "apigateway.amazonaws.com"
-  source_arn    = "${aws_api_gateway_rest_api.main.execution_arn}/*/*"
-}
+# Note: Lambda permission has been moved to modules/lambda/permissions.tf
 
 # ============================================================================
 # Deployment and Stage

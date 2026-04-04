@@ -4,59 +4,7 @@
 # ============================================================================
 # Lambda Execution Role
 # ============================================================================
-
-resource "aws_iam_role" "lambda_execution" {
-  name = "${var.project_name}-${var.lambda_function_name}-execution"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          Service = "lambda.amazonaws.com"
-        }
-        Action = "sts:AssumeRole"
-      }
-    ]
-  })
-
-  tags = {
-    Name        = "${var.project_name}-${var.lambda_function_name}-execution"
-    Environment = var.environment
-    Purpose     = "Lambda execution role"
-  }
-}
-
-resource "aws_iam_role_policy" "lambda_execution" {
-  name = "lambda-execution-policy"
-  role = aws_iam_role.lambda_execution.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "CloudWatchLogs"
-        Effect = "Allow"
-        Action = [
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents"
-        ]
-        Resource = "arn:aws:logs:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:log-group:/aws/lambda/${var.lambda_function_name}:*"
-      },
-      {
-        Sid    = "XRayTracing"
-        Effect = "Allow"
-        Action = [
-          "xray:PutTraceSegments",
-          "xray:PutTelemetryRecords"
-        ]
-        Resource = "*"
-      }
-    ]
-  })
-}
+# Note: Lambda execution role has been moved to modules/lambda/iam.tf
 
 # ============================================================================
 # GitHub OIDC Provider (Optional - only created if github_org is provided)
