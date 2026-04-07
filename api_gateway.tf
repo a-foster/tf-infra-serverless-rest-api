@@ -1,5 +1,6 @@
 # API Gateway REST API
-# Exposes Lambda function via HTTP API with CORS, throttling, and logging
+# Exposes Lambda function via HTTP API with proxy integration, throttling, and logging
+# Routes are handled by the Lambda application (CORS must be returned by Lambda)
 
 # ============================================================================
 # REST API
@@ -20,165 +21,66 @@ resource "aws_api_gateway_rest_api" "main" {
 }
 
 # ============================================================================
-# Resources and Methods
+# Proxy Integration Pattern
+# ============================================================================
+# This configuration uses API Gateway's proxy integration ({proxy+}) pattern,
+# which forwards ALL HTTP requests to the Lambda function regardless of path
+# or method. This allows the Lambda application to handle routing internally
+# using a web framework (e.g., Express, FastAPI, etc.).
+#
+# Benefits:
+# - Add new endpoints purely in Lambda code (no Terraform changes needed)
+# - CORS handled consistently in Lambda application responses
+# - Infrastructure decoupled from application routes
+# - Reduces API Gateway resources from ~7 per endpoint to 3-6 total
+#
+# Note: Lambda application must:
+# - Handle routing for all paths (e.g., /hello, /health, /users, etc.)
+# - Return CORS headers in responses if browser clients need them:
+#   Access-Control-Allow-Origin: *
+#   Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS
+#   Access-Control-Allow-Headers: Content-Type, Authorization, X-Api-Key
 # ============================================================================
 
-# /hello resource
-resource "aws_api_gateway_resource" "hello" {
-  rest_api_id = aws_api_gateway_rest_api.main.id
-  parent_id   = aws_api_gateway_rest_api.main.root_resource_id
-  path_part   = "hello"
-}
-
-# GET /hello method
-resource "aws_api_gateway_method" "hello_get" {
+# Root path (/) - catches requests to the base URL
+resource "aws_api_gateway_method" "root" {
   rest_api_id   = aws_api_gateway_rest_api.main.id
-  resource_id   = aws_api_gateway_resource.hello.id
-  http_method   = "GET"
+  resource_id   = aws_api_gateway_rest_api.main.root_resource_id
+  http_method   = "ANY"
   authorization = "NONE"
 }
 
-# Lambda integration for GET /hello
-resource "aws_api_gateway_integration" "hello_get" {
+resource "aws_api_gateway_integration" "root" {
   rest_api_id             = aws_api_gateway_rest_api.main.id
-  resource_id             = aws_api_gateway_resource.hello.id
-  http_method             = aws_api_gateway_method.hello_get.http_method
+  resource_id             = aws_api_gateway_rest_api.main.root_resource_id
+  http_method             = aws_api_gateway_method.root.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = module.lambda.invoke_arn
 }
 
-# /health resource
-resource "aws_api_gateway_resource" "health" {
+# Proxy resource ({proxy+}) - catches all other paths
+resource "aws_api_gateway_resource" "proxy" {
   rest_api_id = aws_api_gateway_rest_api.main.id
   parent_id   = aws_api_gateway_rest_api.main.root_resource_id
-  path_part   = "health"
+  path_part   = "{proxy+}"
 }
 
-# GET /health method
-resource "aws_api_gateway_method" "health_get" {
+resource "aws_api_gateway_method" "proxy" {
   rest_api_id   = aws_api_gateway_rest_api.main.id
-  resource_id   = aws_api_gateway_resource.health.id
-  http_method   = "GET"
+  resource_id   = aws_api_gateway_resource.proxy.id
+  http_method   = "ANY"
   authorization = "NONE"
 }
 
-# Lambda integration for GET /health
-resource "aws_api_gateway_integration" "health_get" {
+resource "aws_api_gateway_integration" "proxy" {
   rest_api_id             = aws_api_gateway_rest_api.main.id
-  resource_id             = aws_api_gateway_resource.health.id
-  http_method             = aws_api_gateway_method.health_get.http_method
+  resource_id             = aws_api_gateway_resource.proxy.id
+  http_method             = aws_api_gateway_method.proxy.http_method
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
   uri                     = module.lambda.invoke_arn
 }
-
-# ============================================================================
-# CORS Configuration
-# ============================================================================
-
-# OPTIONS /hello for CORS preflight
-resource "aws_api_gateway_method" "hello_options" {
-  rest_api_id   = aws_api_gateway_rest_api.main.id
-  resource_id   = aws_api_gateway_resource.hello.id
-  http_method   = "OPTIONS"
-  authorization = "NONE"
-}
-
-resource "aws_api_gateway_integration" "hello_options" {
-  rest_api_id = aws_api_gateway_rest_api.main.id
-  resource_id = aws_api_gateway_resource.hello.id
-  http_method = aws_api_gateway_method.hello_options.http_method
-  type        = "MOCK"
-
-  request_templates = {
-    "application/json" = "{\"statusCode\": 200}"
-  }
-}
-
-resource "aws_api_gateway_method_response" "hello_options" {
-  rest_api_id = aws_api_gateway_rest_api.main.id
-  resource_id = aws_api_gateway_resource.hello.id
-  http_method = aws_api_gateway_method.hello_options.http_method
-  status_code = "200"
-
-  response_parameters = {
-    "method.response.header.Access-Control-Allow-Headers" = true
-    "method.response.header.Access-Control-Allow-Methods" = true
-    "method.response.header.Access-Control-Allow-Origin"  = true
-  }
-
-  response_models = {
-    "application/json" = "Empty"
-  }
-}
-
-resource "aws_api_gateway_integration_response" "hello_options" {
-  rest_api_id = aws_api_gateway_rest_api.main.id
-  resource_id = aws_api_gateway_resource.hello.id
-  http_method = aws_api_gateway_method.hello_options.http_method
-  status_code = aws_api_gateway_method_response.hello_options.status_code
-
-  response_parameters = {
-    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-    "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS'"
-    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
-  }
-}
-
-# OPTIONS /health for CORS preflight
-resource "aws_api_gateway_method" "health_options" {
-  rest_api_id   = aws_api_gateway_rest_api.main.id
-  resource_id   = aws_api_gateway_resource.health.id
-  http_method   = "OPTIONS"
-  authorization = "NONE"
-}
-
-resource "aws_api_gateway_integration" "health_options" {
-  rest_api_id = aws_api_gateway_rest_api.main.id
-  resource_id = aws_api_gateway_resource.health.id
-  http_method = aws_api_gateway_method.health_options.http_method
-  type        = "MOCK"
-
-  request_templates = {
-    "application/json" = "{\"statusCode\": 200}"
-  }
-}
-
-resource "aws_api_gateway_method_response" "health_options" {
-  rest_api_id = aws_api_gateway_rest_api.main.id
-  resource_id = aws_api_gateway_resource.health.id
-  http_method = aws_api_gateway_method.health_options.http_method
-  status_code = "200"
-
-  response_parameters = {
-    "method.response.header.Access-Control-Allow-Headers" = true
-    "method.response.header.Access-Control-Allow-Methods" = true
-    "method.response.header.Access-Control-Allow-Origin"  = true
-  }
-
-  response_models = {
-    "application/json" = "Empty"
-  }
-}
-
-resource "aws_api_gateway_integration_response" "health_options" {
-  rest_api_id = aws_api_gateway_rest_api.main.id
-  resource_id = aws_api_gateway_resource.health.id
-  http_method = aws_api_gateway_method.health_options.http_method
-  status_code = aws_api_gateway_method_response.health_options.status_code
-
-  response_parameters = {
-    "method.response.header.Access-Control-Allow-Headers" = "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
-    "method.response.header.Access-Control-Allow-Methods" = "'GET,OPTIONS'"
-    "method.response.header.Access-Control-Allow-Origin"  = "'*'"
-  }
-}
-
-# ============================================================================
-# Lambda Permission for API Gateway
-# ============================================================================
-# Note: Lambda permission has been moved to modules/lambda/permissions.tf
 
 # ============================================================================
 # Deployment and Stage
@@ -188,10 +90,8 @@ resource "aws_api_gateway_deployment" "main" {
   rest_api_id = aws_api_gateway_rest_api.main.id
 
   depends_on = [
-    aws_api_gateway_integration.hello_get,
-    aws_api_gateway_integration.health_get,
-    aws_api_gateway_integration.hello_options,
-    aws_api_gateway_integration.health_options,
+    aws_api_gateway_integration.root,
+    aws_api_gateway_integration.proxy,
   ]
 
   lifecycle {
@@ -201,12 +101,11 @@ resource "aws_api_gateway_deployment" "main" {
   triggers = {
     # Force redeployment when configuration changes
     redeployment = sha1(jsonencode([
-      aws_api_gateway_resource.hello.id,
-      aws_api_gateway_resource.health.id,
-      aws_api_gateway_method.hello_get.id,
-      aws_api_gateway_method.health_get.id,
-      aws_api_gateway_integration.hello_get.id,
-      aws_api_gateway_integration.health_get.id,
+      aws_api_gateway_resource.proxy.id,
+      aws_api_gateway_method.root.id,
+      aws_api_gateway_method.proxy.id,
+      aws_api_gateway_integration.root.id,
+      aws_api_gateway_integration.proxy.id,
     ]))
   }
 }
@@ -214,7 +113,7 @@ resource "aws_api_gateway_deployment" "main" {
 resource "aws_api_gateway_stage" "main" {
   deployment_id = aws_api_gateway_deployment.main.id
   rest_api_id   = aws_api_gateway_rest_api.main.id
-  stage_name    = var.api_stage_name
+  stage_name    = local.api_stage_name
 
   access_log_settings {
     destination_arn = aws_cloudwatch_log_group.api_gateway.arn
@@ -237,7 +136,7 @@ resource "aws_api_gateway_stage" "main" {
   xray_tracing_enabled = true
 
   tags = {
-    Name        = "${var.project_name}-${var.api_stage_name}"
+    Name        = "${var.project_name}-${local.api_stage_name}"
     Environment = var.environment
   }
 }

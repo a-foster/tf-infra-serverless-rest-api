@@ -49,3 +49,22 @@ output "alias_arn" {
   description = "Lambda alias ARN"
   value       = aws_lambda_alias.live.arn
 }
+
+# ============================================================================
+# ECR Outputs
+# ============================================================================
+
+output "ecr_repository_url" {
+  description = "ECR repository URL for Docker images"
+  value       = aws_ecr_repository.lambda_container.repository_url
+}
+
+output "ecr_repository_arn" {
+  description = "ECR repository ARN"
+  value       = aws_ecr_repository.lambda_container.arn
+}
+
+output "ecr_repository_name" {
+  description = "ECR repository name"
+  value       = aws_ecr_repository.lambda_container.name
+}

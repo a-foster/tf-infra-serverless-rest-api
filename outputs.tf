@@ -13,12 +13,12 @@ output "aws_account_id" {
 
 output "ecr_repository_url" {
   description = "ECR repository URL for Docker images"
-  value       = aws_ecr_repository.lambda_container.repository_url
+  value       = module.lambda.ecr_repository_url
 }
 
 output "ecr_repository_name" {
   description = "ECR repository name"
-  value       = aws_ecr_repository.lambda_container.name
+  value       = module.lambda.ecr_repository_name
 }
 
 output "lambda_function_name" {

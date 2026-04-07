@@ -89,7 +89,7 @@ resource "aws_iam_role_policy" "github_actions_app" {
           "ecr:DescribeImages",
           "ecr:ListImages"
         ]
-        Resource = aws_ecr_repository.lambda_container.arn
+        Resource = module.lambda.ecr_repository_arn
       },
       {
         Sid    = "LambdaUpdate"

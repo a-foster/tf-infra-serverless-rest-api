@@ -60,13 +60,8 @@ variable "enable_github_actions" {
   default     = null
 }
 
-locals {
-  # Automatically determine if GitHub Actions should be enabled
-  enable_github_actions = var.enable_github_actions != null ? var.enable_github_actions : (var.github_org != "" && var.github_org != null)
-}
-
 variable "api_stage_name" {
-  description = "API Gateway deployment stage name"
+  description = "API Gateway deployment stage name (defaults to environment if not specified) - can be used for blue/green deployment"
   type        = string
-  default     = "prod"
+  default     = null
 }
