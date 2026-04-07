@@ -2,22 +2,22 @@
 
 output "function_name" {
   description = "Lambda function name"
-  value       = aws_lambda_function.hello_world.function_name
+  value       = aws_lambda_function.lambda_function.function_name
 }
 
 output "function_arn" {
   description = "Lambda function ARN"
-  value       = aws_lambda_function.hello_world.arn
+  value       = aws_lambda_function.lambda_function.arn
 }
 
 output "invoke_arn" {
   description = "Lambda function invoke ARN (for API Gateway integration)"
-  value       = aws_lambda_function.hello_world.invoke_arn
+  value       = aws_lambda_function.lambda_function.invoke_arn
 }
 
 output "qualified_arn" {
   description = "Lambda function qualified ARN"
-  value       = aws_lambda_function.hello_world.qualified_arn
+  value       = aws_lambda_function.lambda_function.qualified_arn
 }
 
 output "execution_role_arn" {
