@@ -2,11 +2,6 @@
 # Lambda execution role, GitHub OIDC provider, and GitHub Actions roles
 
 # ============================================================================
-# Lambda Execution Role
-# ============================================================================
-# Note: Lambda execution role has been moved to modules/lambda/iam.tf
-
-# ============================================================================
 # GitHub OIDC Provider (Optional - only created if github_org is provided)
 # ============================================================================
 
@@ -24,7 +19,103 @@ resource "aws_iam_openid_connect_provider" "github" {
 }
 
 # ============================================================================
-# GitHub Actions Role - Infrastructure Repo (Optional)
+# GitHub Actions Role - Application Repo (Optional)
+# ============================================================================
+
+data "aws_iam_policy_document" "github_actions_app_assume" {
+  count = local.enable_github_actions ? 1 : 0
+
+  statement {
+    effect = "Allow"
+    principals {
+      type        = "Federated"
+      identifiers = [aws_iam_openid_connect_provider.github[0].arn]
+    }
+    actions = ["sts:AssumeRoleWithWebIdentity"]
+    condition {
+      test     = "StringEquals"
+      variable = "token.actions.githubusercontent.com:aud"
+      values   = ["sts.amazonaws.com"]
+    }
+    condition {
+      test     = "StringLike"
+      variable = "token.actions.githubusercontent.com:sub"
+      values   = ["repo:${var.github_org}/${var.github_repo_app}:*"]
+    }
+  }
+}
+
+resource "aws_iam_role" "github_actions_app" {
+  count = local.enable_github_actions ? 1 : 0
+
+  name               = "${var.project_name}-github-actions-app"
+  assume_role_policy = data.aws_iam_policy_document.github_actions_app_assume[0].json
+
+  tags = {
+    Name        = "${var.project_name}-github-actions-app"
+    Environment = var.environment
+    Purpose     = "GitHub Actions for application repo"
+  }
+}
+
+resource "aws_iam_role_policy" "github_actions_app" {
+  count = local.enable_github_actions ? 1 : 0
+
+  name = "github-actions-app-policy"
+  role = aws_iam_role.github_actions_app[0].id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid    = "ECRAuthentication"
+        Effect = "Allow"
+        Action = [
+          "ecr:GetAuthorizationToken"
+        ]
+        Resource = "*"
+      },
+      {
+        Sid    = "ECRImageManagement"
+        Effect = "Allow"
+        Action = [
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+          "ecr:PutImage",
+          "ecr:InitiateLayerUpload",
+          "ecr:UploadLayerPart",
+          "ecr:CompleteLayerUpload",
+          "ecr:DescribeImages",
+          "ecr:ListImages"
+        ]
+        Resource = aws_ecr_repository.lambda_container.arn
+      },
+      {
+        Sid    = "LambdaUpdate"
+        Effect = "Allow"
+        Action = [
+          "lambda:UpdateFunctionCode",
+          "lambda:GetFunction",
+          "lambda:GetFunctionConfiguration"
+        ]
+        Resource = "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:${var.lambda_function_name}"
+      },
+      {
+        Sid    = "LambdaInvoke"
+        Effect = "Allow"
+        Action = [
+          "lambda:InvokeFunction"
+        ]
+        Resource = "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:${var.lambda_function_name}"
+      }
+    ]
+  })
+}
+
+
+# ============================================================================
+# GitHub Actions Role - Infrastructure Repo (Optional) - Should be done in bootstrap run
 # ============================================================================
 
 data "aws_iam_policy_document" "github_actions_infra_assume" {
@@ -132,101 +223,6 @@ resource "aws_iam_role_policy" "github_actions_infra" {
           "dynamodb:TagResource"
         ]
         Resource = "*"
-      }
-    ]
-  })
-}
-
-# ============================================================================
-# GitHub Actions Role - Application Repo (Optional)
-# ============================================================================
-
-data "aws_iam_policy_document" "github_actions_app_assume" {
-  count = local.enable_github_actions ? 1 : 0
-
-  statement {
-    effect = "Allow"
-    principals {
-      type        = "Federated"
-      identifiers = [aws_iam_openid_connect_provider.github[0].arn]
-    }
-    actions = ["sts:AssumeRoleWithWebIdentity"]
-    condition {
-      test     = "StringEquals"
-      variable = "token.actions.githubusercontent.com:aud"
-      values   = ["sts.amazonaws.com"]
-    }
-    condition {
-      test     = "StringLike"
-      variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_org}/${var.github_repo_app}:*"]
-    }
-  }
-}
-
-resource "aws_iam_role" "github_actions_app" {
-  count = local.enable_github_actions ? 1 : 0
-
-  name               = "${var.project_name}-github-actions-app"
-  assume_role_policy = data.aws_iam_policy_document.github_actions_app_assume[0].json
-
-  tags = {
-    Name        = "${var.project_name}-github-actions-app"
-    Environment = var.environment
-    Purpose     = "GitHub Actions for application repo"
-  }
-}
-
-resource "aws_iam_role_policy" "github_actions_app" {
-  count = local.enable_github_actions ? 1 : 0
-
-  name = "github-actions-app-policy"
-  role = aws_iam_role.github_actions_app[0].id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "ECRAuthentication"
-        Effect = "Allow"
-        Action = [
-          "ecr:GetAuthorizationToken"
-        ]
-        Resource = "*"
-      },
-      {
-        Sid    = "ECRImageManagement"
-        Effect = "Allow"
-        Action = [
-          "ecr:BatchCheckLayerAvailability",
-          "ecr:GetDownloadUrlForLayer",
-          "ecr:BatchGetImage",
-          "ecr:PutImage",
-          "ecr:InitiateLayerUpload",
-          "ecr:UploadLayerPart",
-          "ecr:CompleteLayerUpload",
-          "ecr:DescribeImages",
-          "ecr:ListImages"
-        ]
-        Resource = aws_ecr_repository.lambda_container.arn
-      },
-      {
-        Sid    = "LambdaUpdate"
-        Effect = "Allow"
-        Action = [
-          "lambda:UpdateFunctionCode",
-          "lambda:GetFunction",
-          "lambda:GetFunctionConfiguration"
-        ]
-        Resource = "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:${var.lambda_function_name}"
-      },
-      {
-        Sid    = "LambdaInvoke"
-        Effect = "Allow"
-        Action = [
-          "lambda:InvokeFunction"
-        ]
-        Resource = "arn:aws:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:${var.lambda_function_name}"
       }
     ]
   })
