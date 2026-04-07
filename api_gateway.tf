@@ -47,7 +47,7 @@ resource "aws_api_gateway_method" "root" {
   rest_api_id   = aws_api_gateway_rest_api.main.id
   resource_id   = aws_api_gateway_rest_api.main.root_resource_id
   http_method   = "ANY"
-  authorization = "NONE"
+  authorization = "NONE" # For production - Cognito for user auth, add API keys for rate limiting, consider WAF for production traffic.
 }
 
 resource "aws_api_gateway_integration" "root" {

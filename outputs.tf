@@ -65,3 +65,22 @@ output "terraform_state_lock_table" {
   description = "DynamoDB table name for Terraform state locking (managed separately)"
   value       = "sano-interview-terraform-locks"
 }
+
+# ============================================================================
+# Security & Compliance Outputs
+# ============================================================================
+
+output "cloudtrail_name" {
+  description = "CloudTrail name for audit logging"
+  value       = aws_cloudtrail.main.name
+}
+
+output "cloudtrail_arn" {
+  description = "CloudTrail ARN for audit logging"
+  value       = aws_cloudtrail.main.arn
+}
+
+output "audit_logs_bucket" {
+  description = "S3 bucket name for CloudTrail audit logs"
+  value       = aws_s3_bucket.cloudtrail_logs.id
+}
