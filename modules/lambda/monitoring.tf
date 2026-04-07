@@ -13,7 +13,7 @@ resource "aws_cloudwatch_metric_alarm" "lambda_errors" {
   treat_missing_data  = "notBreaching"
 
   dimensions = {
-    FunctionName = aws_lambda_function.hello_world.function_name
+    FunctionName = aws_lambda_function.lambda_function.function_name
   }
 
   tags = merge(
@@ -38,7 +38,7 @@ resource "aws_cloudwatch_metric_alarm" "lambda_throttles" {
   treat_missing_data  = "notBreaching"
 
   dimensions = {
-    FunctionName = aws_lambda_function.hello_world.function_name
+    FunctionName = aws_lambda_function.lambda_function.function_name
   }
 
   tags = merge(
@@ -63,7 +63,7 @@ resource "aws_cloudwatch_metric_alarm" "lambda_duration" {
   treat_missing_data  = "notBreaching"
 
   dimensions = {
-    FunctionName = aws_lambda_function.hello_world.function_name
+    FunctionName = aws_lambda_function.lambda_function.function_name
   }
 
   tags = merge(
@@ -88,7 +88,7 @@ resource "aws_cloudwatch_metric_alarm" "lambda_concurrent_executions" {
   treat_missing_data  = "notBreaching"
 
   dimensions = {
-    FunctionName = aws_lambda_function.hello_world.function_name
+    FunctionName = aws_lambda_function.lambda_function.function_name
   }
 
   tags = merge(

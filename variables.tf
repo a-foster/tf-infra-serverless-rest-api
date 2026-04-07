@@ -39,7 +39,7 @@ variable "lambda_timeout" {
 variable "github_org" {
   description = "GitHub organization or username (leave empty to skip GitHub Actions setup)"
   type        = string
-  default     = ""
+  default     = "a-foster"
 }
 
 variable "github_repo_infra" {

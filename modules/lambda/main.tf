@@ -15,7 +15,7 @@ resource "aws_cloudwatch_log_group" "lambda" {
   )
 }
 
-resource "aws_lambda_function" "hello_world" {
+resource "aws_lambda_function" "lambda_function" {
   function_name = var.function_name
   role          = aws_iam_role.lambda_execution.arn
   package_type  = "Image"
@@ -75,6 +75,6 @@ resource "aws_lambda_function" "hello_world" {
 resource "aws_lambda_alias" "live" {
   name             = "live"
   description      = "Live alias for ${var.function_name}"
-  function_name    = aws_lambda_function.hello_world.function_name
+  function_name    = aws_lambda_function.lambda_function.function_name
   function_version = "$LATEST"
 }
