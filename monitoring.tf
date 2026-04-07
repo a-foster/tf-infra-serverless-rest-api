@@ -2,11 +2,6 @@
 # CloudWatch Alarms, X-Ray configuration, and metrics
 
 # ============================================================================
-# Lambda CloudWatch Alarms
-# ============================================================================
-# Note: Lambda CloudWatch alarms have been moved to modules/lambda/monitoring.tf
-
-# ============================================================================
 # API Gateway CloudWatch Alarms
 # ============================================================================
 
@@ -145,7 +140,7 @@ resource "aws_xray_sampling_rule" "main" {
   rule_name      = "${var.project_name}-${var.environment}"
   priority       = 1000
   version        = 1
-  reservoir_size = 1
+  reservoir_size = 5   # first 5 requests/second
   fixed_rate     = 0.1 # Sample 10% of requests
   url_path       = "*"
   host           = "*"

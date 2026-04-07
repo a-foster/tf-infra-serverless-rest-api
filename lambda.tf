@@ -1,9 +1,6 @@
 # Lambda Function Module
 # Containerized Lambda function with OpenTelemetry observability
 
-# Note: For initial deployment, you need to push a Docker image to ECR first
-# The image URI should be: <account_id>.dkr.ecr.<region>.amazonaws.com/<repo_name>:latest
-
 locals {
   # Construct the initial image URI - this assumes an image with tag "latest" exists or will be pushed
   lambda_image_uri = "${aws_ecr_repository.lambda_container.repository_url}:latest"
