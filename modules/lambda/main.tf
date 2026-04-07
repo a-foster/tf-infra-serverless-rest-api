@@ -19,7 +19,7 @@ resource "aws_lambda_function" "lambda_function" {
   function_name = var.function_name
   role          = aws_iam_role.lambda_execution.arn
   package_type  = "Image"
-  image_uri     = var.image_uri
+  image_uri     = "${aws_ecr_repository.lambda_container.repository_url}:latest"
 
   memory_size = var.memory_size
   timeout     = var.timeout

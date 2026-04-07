@@ -1,17 +1,11 @@
 # Lambda Function Module
 # Containerized Lambda function with OpenTelemetry observability
 
-locals {
-  # Construct the initial image URI - this assumes an image with tag "latest" exists or will be pushed
-  lambda_image_uri = "${aws_ecr_repository.lambda_container.repository_url}:latest"
-}
-
 module "lambda" {
   source = "./modules/lambda"
 
   # Required inputs
   function_name  = var.lambda_function_name
-  image_uri      = local.lambda_image_uri
   environment    = var.environment
   project_name   = var.project_name
   aws_region     = data.aws_region.current.name
@@ -32,6 +26,9 @@ module "lambda" {
 
   # API Gateway integration
   api_gateway_execution_arn = aws_api_gateway_rest_api.main.execution_arn
+
+  # GitHub Actions integration (optional)
+  github_actions_role_arn = local.enable_github_actions ? aws_iam_role.github_actions_app[0].arn : null
 
   # Tags
   tags = {}

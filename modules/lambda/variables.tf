@@ -9,11 +9,6 @@ variable "function_name" {
   type        = string
 }
 
-variable "image_uri" {
-  description = "ECR image URI for the Lambda function"
-  type        = string
-}
-
 variable "environment" {
   description = "Environment name (e.g., dev, staging, prod)"
   type        = string
@@ -103,6 +98,16 @@ variable "concurrent_execution_threshold" {
 variable "api_gateway_execution_arn" {
   description = "API Gateway execution ARN for Lambda permission"
   type        = string
+}
+
+# ============================================================================
+# GitHub Actions Integration (Optional)
+# ============================================================================
+
+variable "github_actions_role_arn" {
+  description = "IAM role ARN for GitHub Actions to push images to ECR (optional)"
+  type        = string
+  default     = null
 }
 
 # ============================================================================
